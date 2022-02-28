@@ -217,8 +217,8 @@ void set_button(int8_t state, elevator* elev, floor_t fid) {
     uint8_t mask = 0b1 << (7 - fid % 8);
     if(state) {
         elev->buttons[block] |= mask;
-        if(elev->pos < elev->target && elev->target < fid) elev->target = fid;
-        else if(elev->pos > elev->target && elev->target > fid) elev->target = fid;
+        if(elev->pos <= elev->target && elev->target < fid) elev->target = fid;
+        else if(elev->pos >= elev->target && elev->target > fid) elev->target = fid;
     } else {
         mask = ~mask;
         elev->buttons[block] &= mask;
