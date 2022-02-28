@@ -75,6 +75,7 @@ Metric is calculated based on:
 - Distance from the elevator to the floor
 - Current elevator movement
 - Other floors waiting for that elevator
+
 Metric is just a method of choosing best elevators to request - it might come either sooner (if the elevator stops on this floor while serving requests from much earlier) or later (it's impossible to predict what buttons passengers will press inside). After completing a request, all metrics of those who wait for given elevator are lowered to prevent metrics counting to infinity.
 
 ## Configuration
