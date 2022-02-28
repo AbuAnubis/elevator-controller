@@ -67,13 +67,15 @@ commands can be combined and executed simultaneously. Examples:
 ## Algorithm
 Upon calling an elevator from a floor, the floor calculates metric for each elevator available and chooses one with the lowest metric. 
 
+Queue positions of requests are circular - when maximum number is reached, next request will receive number 0. This way there is no risk of overloading the variables  which would lead to unknown behaviour of the program.
+
 Elevator going in one direction (up or down) will stop at every floor on its way that either has a corresponding button inside pressed or has someone waiting for that elevator and wants to go in the same direction as the elevator is going. After reaching its final destination elevator goes to a floor that is waiting for that elevator (if there are more than one such floors, the earliest request is taken). 
 
 Metric is calculated based on:
 - Distance from the elevator to the floor
 - Current elevator movement
 - Other floors waiting for that elevator
-Metric is just a method of choosing best elevators to request - it might come either sooner (if the elevator stops on this floor while serving requests from much earlier) or later (it's impossible to predict what buttons passengers will press inside).
+Metric is just a method of choosing best elevators to request - it might come either sooner (if the elevator stops on this floor while serving requests from much earlier) or later (it's impossible to predict what buttons passengers will press inside). After completing a request, all metrics of those who wait for given elevator are lowered to prevent metrics counting to infinity.
 
 ## Configuration
 Preprocessor constants in the beginning of `engine.c` can be altered, depending on needs:
