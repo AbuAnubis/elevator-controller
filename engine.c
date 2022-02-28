@@ -175,53 +175,53 @@ elevid_t make_request(floor* fl, int dir, elevator* elevs) {
 /**
  * Chooses new elevator's target
 **/
-void choose_target(elevator elev, floor* fls) {
+void choose_target(elevator* elev, floor* fls) {
     qpos_t qnext = 0;
     floor_t fid = -1;
     for(floor_t i=0; i<NFLOOR; ++i) {
-        if(fls[i].upelev == elev.id && (fid < 0 || qrel(fls[i].upqueue, elev) < qnext)) {
-            qnext = qrel(fls[i].upqueue, elev);
+        if(fls[i].upelev == elev->id && (fid < 0 || qrel(fls[i].upqueue, *elev) < qnext)) {
+            qnext = qrel(fls[i].upqueue, *elev);
             fid = i;
         }
-        if(elev.id == 0) printf("%d\n", fls[i].dnelev);
-        if(fls[i].dnelev == elev.id && (fid < 0 || qrel(fls[i].dnqueue, elev) < qnext)) {
-            qnext = qrel(fls[i].dnqueue, elev);
+        // if(elev->id == 0) printf("%d\n", fls[i].dnelev);
+        if(fls[i].dnelev == elev->id && (fid < 0 || qrel(fls[i].dnqueue, *elev) < qnext)) {
+            qnext = qrel(fls[i].dnqueue, *elev);
             fid = i;
         }
     }
-    if(fid >= 0 && elev.pos == elev.target) {  // at least one floor has called this elevator and it's not in the middle of a course
-        elev.target = fid;
+    if(fid >= 0 && elev->pos == elev->target) {  // at least one floor has called this elevator and it's not in the middle of a course
+        elev->target = fid;
     } else if(fid < 0) {  // no target is left
-        elev.newest.floor_id = -1;
+        elev->newest.floor_id = -1;
     }
-    elev.qnext = qnext;
+    elev->qnext = qnext;
 }
 
 /**
  * Lowers metric of the elevator and all its request by a given value (to avoid counting to infinity)
 **/
-void lower_metric(metric_t sub, elevator elev, floor* fls) {
-    elev.maxmetr -= sub;
+void lower_metric(metric_t sub, elevator* elev, floor* fls) {
+    elev->maxmetr -= sub;
     for(floor_t i=0; i<NFLOOR; ++i) {
-        if(fls[i].dnelev == elev.id) {
+        if(fls[i].dnelev == elev->id) {
             fls[i].dnmetr -= sub;
         }
-        if(fls[i].upelev == elev.id) {
+        if(fls[i].upelev == elev->id) {
             fls[i].upmetr -= sub;
         }
     }
 }
 
-void set_button(int8_t state, elevator elev, floor_t fid) {
+void set_button(int8_t state, elevator* elev, floor_t fid) {
     floor_t block = fid >> 3;
     uint8_t mask = 0b1 << (7 - fid % 8);
     if(state) {
-        elev.buttons[block] |= mask;
-        if(elev.pos < elev.target && elev.target < fid) elev.target = fid;
-        else if(elev.pos > elev.target && elev.target > fid) elev.target = fid;
+        elev->buttons[block] |= mask;
+        if(elev->pos < elev->target && elev->target < fid) elev->target = fid;
+        else if(elev->pos > elev->target && elev->target > fid) elev->target = fid;
     } else {
         mask = ~mask;
-        elev.buttons[block] &= mask;
+        elev->buttons[block] &= mask;
     }
 }
 
@@ -240,7 +240,7 @@ void step(floor* fls, elevator* elevs) {
             if(_pos != _trg) {  // has to move towards its target
                 _pos += (_pos < _trg ? 1 : -1);
                 if(_pos == _trg) {  // elevator arrived at its final stop
-                    set_button(0, elevs[i], _pos);
+                    set_button(0, &(elevs[i]), _pos);
                     elevs[i].wait = TSTOP;
                     if(fls[_pos].upelev == elevs[i].id && fls[_pos].upqueue == elevs[i].qnext) {
                         // elevator fulfilled its designated request
@@ -248,16 +248,16 @@ void step(floor* fls, elevator* elevs) {
                         elevs[i].served.floor_id = _pos;
                         elevs[i].served.qpos = fls[_pos].upqueue;
                         fls[_pos].upelev = -1;
-                        lower_metric(fls[_pos].upmetr, elevs[i], fls);
+                        lower_metric(fls[_pos].upmetr, &(elevs[i]), fls);
                     } else if(fls[_pos].dnelev == elevs[i].id && fls[_pos].dnqueue == elevs[i].qnext) {
                         // elevator fulfilled its designated request
                         elevs[i].served.dir = -1;
                         elevs[i].served.floor_id = _pos;
                         elevs[i].served.qpos = fls[_pos].dnqueue;
                         fls[_pos].dnelev = -1;
-                        lower_metric(fls[_pos].dnmetr, elevs[i], fls);
+                        lower_metric(fls[_pos].dnmetr, &(elevs[i]), fls);
                     }
-                    choose_target(elevs[i], fls);
+                    choose_target(&(elevs[i]), fls);
                 } else if(_pos < _trg && fls[_pos].upelev == elevs[i].id) {  // the elevator can take someone up
                     fls[_pos].upelev = -1;
                 } else if(_pos > _trg && fls[_pos].dnelev == elevs[i].id) {  // the elevator can take someone down
@@ -266,7 +266,7 @@ void step(floor* fls, elevator* elevs) {
                     elevs[i].wait = TFLOOR;
                 }
             } else {  // elevator waits for something to do
-                choose_target(elevs[i], fls);
+                choose_target(&(elevs[i]), fls);
             }
         }
     }
@@ -306,7 +306,7 @@ void command(char c, elevator* elevs, floor* fls) {
         floor_t fid;
         elevid_t eid;
         scanf("%hhd %hd", &eid, &fid);
-        set_button(1, (elevs)[eid], fid);
+        set_button(1, &(elevs[eid]), fid);
     } else if(c == 'c') {
         floor_t fid;
         int8_t dir;
